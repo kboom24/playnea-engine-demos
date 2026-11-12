@@ -35,6 +35,9 @@
       ".pn-bar>b{display:block;height:100%;width:0;background:linear-gradient(90deg," + a + "," + b + ");transition:width .2s}" +
       ".pn-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;background:radial-gradient(ellipse at center,rgba(10,6,30,.35),rgba(10,6,30,.78));opacity:0;pointer-events:none;transition:opacity .25s}" +
       ".pn-ov.show{opacity:1;pointer-events:auto}" +
+      /* a faded-out overlay must not stay composited: its blurred card + infinite button animations cost every frame on software/mobile GPUs */
+      ".pn-ov:not(.show){visibility:hidden;transition:opacity .25s,visibility 0s linear .25s}.pn-ov:not(.show) *{animation-play-state:paused!important}" +
+      "#pn-root.pn-lowq .pn-chip,#pn-root.pn-lowq .pn-ib{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(20,14,50,.62)!important}" +
       ".pn-card{width:min(88vw,400px);max-height:88vh;overflow:auto;box-sizing:border-box;text-align:center;padding:22px 20px 18px;border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.25);box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateY(10px) scale(.96);transition:transform .3s cubic-bezier(.2,1.4,.4,1)}" +
       ".pn-ov.show .pn-card{transform:none}" +
       ".pn-card h1{margin:0 0 4px;font-size:clamp(28px,8vw,42px);line-height:1.02;font-weight:900;letter-spacing:-.5px;background:linear-gradient(180deg,#fff," + a + ");-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 rgba(0,0,0,.35))}" +
@@ -315,6 +318,7 @@
       }
       buttons.forEach(function (b) { tbtn(tbs, b.id, b.label || b.id); });
     }
+    else if (scheme === "pointer" && buttons.length) { var ptbs = el("div", "pn-tbs", null, touch); buttons.forEach(function (b) { tbtn(ptbs, b.id, b.label || b.id); }); }
     function tbtn(parent, id, label, extra) {
       var e = el("button", "pn-tb" + (extra ? " " + extra : ""), esc(label), parent);
       var on = function (ev) { ev.preventDefault(); tdown[id] = true; pressedEdge["btn:" + id] = true; e.classList.add("down"); Audio.unlock(); };
@@ -538,7 +542,7 @@
       var dt = Math.min(dtRaw || 0, 1 / 20); G.dt = dt; G.t += dt; stats.frames++;
       fpsT += dtRaw || 0; fpsN++;
       if (fpsT >= 1) { stats.fps = Math.round(fpsN / fpsT); stats.fpsSamples.push(stats.fps); if (stats.fpsSamples.length > 30) stats.fpsSamples.shift(); fpsT = 0; fpsN = 0;
-        if (G.state === "play" && stats.fps < 40 && def.autoQuality !== false) { if (++slow >= 3) { var i = tiers.indexOf(stats.quality); if (i < 2) { stats.quality = tiers[i + 1]; safe(ad.setQuality, G, stats.quality); resize(); } slow = 0; } } else slow = 0; }
+        if (G.state === "play" && stats.fps < 40 && def.autoQuality !== false) { if (++slow >= 3) { var i = tiers.indexOf(stats.quality); if (i < 2) { stats.quality = tiers[i + 1]; root.classList.toggle("pn-lowq", stats.quality !== "high"); safe(ad.setQuality, G, stats.quality); resize(); } slow = 0; } } else slow = 0; }
       pollPad();
       buttons.forEach(function (b) { if (input.pressed(b.id)) lastPress[b.id] = G.t; });
       var now = performance.now(), ts = now < hsUntil ? 0 : now < smUntil ? smScale : 1;
